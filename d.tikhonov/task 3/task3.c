@@ -10,14 +10,18 @@ int main() {
     printf("Effective UID: %d\n", geteuid());
 
     FILE *file = fopen("main.txt", "r");
-    if (file == NULL) {
+    if (file == NULL) 
+    {
         perror("fopen failed");
-    } else {
+    } 
+    else 
+    {
         printf("File opened successfully\n");
         fclose(file);
     }
 
-    if (setuid(geteuid()) == -1) {
+    if (setuid(geteuid()) == -1) 
+    {
         perror("setuid failed");
         exit(EXIT_FAILURE);
     }
@@ -26,9 +30,12 @@ int main() {
     printf("Effective UID: %d\n", geteuid());
 
     file = fopen("main.txt", "r");
-    if (file == NULL) {
+    if (file == NULL) 
+    {
         perror("fopen failed");
-    } else {
+    } 
+    else 
+    {
         printf("File opened successfully\n");
         fclose(file);
     }
