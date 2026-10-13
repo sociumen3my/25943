@@ -4,6 +4,16 @@
 
 #define MAX_LINE_LENGTH 1024
 
+#define ESC 0x1B
+
+enum
+{
+    STATE_TEXT,
+    STATE_ESC,
+    STATE_CSI,
+    STATE_OSC
+};
+
 typedef struct LineNode
 {
     char *text;
@@ -20,6 +30,95 @@ static void trim_newline(char *text)
     {
         text[length - 1] = '\0';
     }
+}
+
+static char *strip_terminal_sequences(char *text)
+{
+    char *src;
+    char *dst;
+    int state;
+
+    src = text;
+    dst = text;
+    state = STATE_TEXT;
+
+    while (*src != '\0')
+    {
+        unsigned char c;
+
+        c = (unsigned char)*src;
+
+        switch (state)
+        {
+        case STATE_TEXT:
+            if (c == ESC)
+            {
+                state = STATE_ESC;
+            }
+            else if (c < 0x20 && c != '\t')
+            {
+            }
+            else
+            {
+                *dst++ = (char)c;
+            }
+            src++;
+            break;
+
+        case STATE_ESC:
+            src++;
+            if (c == '[')
+            {
+                state = STATE_CSI;
+            }
+            else if (c == ']')
+            {
+                state = STATE_OSC;
+            }
+            else if (c >= 0x20 && c <= 0x7E)
+            {
+                src++;
+                state = STATE_TEXT;
+            }
+            else
+            {
+                state = STATE_TEXT;
+            }
+            break;
+
+        case STATE_CSI:
+            src++;
+            if (c == '\0' || (c >= 0x40 && c <= 0x7E))
+            {
+                state = STATE_TEXT;
+            }
+            break;
+
+        case STATE_OSC:
+            if (c == '\007')
+            {
+                src++;
+                state = STATE_TEXT;
+            }
+            else if (c == ESC)
+            {
+                src++;
+                if (*src == '\\')
+                {
+                    src++;
+                }
+                state = STATE_TEXT;
+            }
+            else
+            {
+                src++;
+            }
+            break;
+        }
+    }
+
+    *dst = '\0';
+    return text;
 }
 
 static int append_line(LineNode **head, LineNode **tail, const char *text)
@@ -104,6 +203,7 @@ int main(void)
         }
 
         trim_newline(buffer);
+        strip_terminal_sequences(buffer);
 
         if (append_line(&head, &tail, buffer) == -1)
         {
