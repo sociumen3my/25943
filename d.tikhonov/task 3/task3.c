@@ -20,12 +20,12 @@ int main() {
         fclose(file);
     }
 
-    if (setuid(geteuid()) == -1) 
+    if (setuid(getuid()) == -1)
     {
         perror("setuid failed");
         exit(EXIT_FAILURE);
     }
-    printf("setuid(geteuid()) called successfully\n");
+    printf("setuid(getuid()) called successfully\n");
     printf("UID: %d\n", getuid());
     printf("Effective UID: %d\n", geteuid());
 
