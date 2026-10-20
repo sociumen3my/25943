@@ -4,10 +4,6 @@
 #include <sys/resource.h>
 #include <dirent.h>
 #include <errno.h>
-
-#ifndef RLIMIT_NPROC
-#define RLIMIT_NPROC 6
-#endif
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +36,44 @@ static void usage(const char *name)
     printf("  -d             print the current working directory\n");
     printf("  -v             print the environment\n");
     printf("  -V name=value  set an environment variable\n");
+}
+
+static int process_limit(const char *root, unsigned long long *limit)
+{
+    char path[PATH_MAX + 1];
+    char line[256];
+    char token[64];
+    FILE *file;
+    int found;
+
+    snprintf(path, sizeof path, "%s/self/limits", root);
+    file = fopen(path, "r");
+    if (file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+
+    found = 0;
+    while (fgets(line, sizeof line, file) != NULL)
+    {
+        if (sscanf(line, "Max processes %63s", token) == 1)
+        {
+            if (strcmp(token, "unlimited") == 0)
+            {
+                *limit = ULLONG_MAX;
+            }
+            else
+            {
+                *limit = strtoull(token, NULL, 10);
+            }
+            found = 1;
+            break;
+        }
+    }
+
+    fclose(file);
+    return found ? 0 : -1;
 }
 
 static int line_uid(const char *line, uid_t *uid)
@@ -117,6 +151,7 @@ static int options(int argc, char **argv)
     char path[PATH_MAX + 1];
     char **environment;
     int process_count;
+    unsigned long long limit;
     unsigned long long remaining;
     long value;
 
@@ -163,19 +198,18 @@ static int options(int argc, char **argv)
         break;
 
     case 'u':
-        if (getrlimit(RLIMIT_NPROC, &rlimit) == -1)
+        if (process_limit("/proc", &limit) == -1)
         {
-            perror("getrlimit");
             return -1;
         }
 
-        if (rlimit.rlim_cur == RLIM_INFINITY)
+        if (limit == ULLONG_MAX)
         {
             puts("ulimit=unlimited");
         }
         else
         {
-            printf("ulimit=%llu\n", (unsigned long long)rlimit.rlim_cur);
+            printf("ulimit=%llu\n", limit);
         }
 
         process_count = count_processes("/proc", getuid());
@@ -184,20 +218,19 @@ static int options(int argc, char **argv)
             return -1;
         }
 
-        if (rlimit.rlim_cur == RLIM_INFINITY)
+        if (limit == ULLONG_MAX)
         {
             puts("max new processes=unlimited");
         }
         else
         {
-            if ((unsigned long long)process_count >= (unsigned long long)rlimit.rlim_cur)
+            if ((unsigned long long)process_count >= limit)
             {
                 remaining = 0;
             }
             else
             {
-                remaining = (unsigned long long)rlimit.rlim_cur -
-                    (unsigned long long)process_count;
+                remaining = limit - (unsigned long long)process_count;
             }
             printf("max new processes=%llu (current=%d)\n",
                 remaining, process_count);
