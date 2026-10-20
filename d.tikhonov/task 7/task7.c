@@ -61,6 +61,18 @@ static int build_table(Line *table)
     return lines;
 }
 
+static void print_table(const Line *table, int line_count)
+{
+    int i;
+
+    printf("Table of lines:\n");
+    printf("  line   offset   length\n");
+    for (i = 0; i < line_count; i++)
+    {
+        printf("  %4d   %7zu   %7zu\n", i + 1, table[i].offset, table[i].length);
+    }
+}
+
 static void print_line(const Line *line)
 {
     fwrite(file_data + line->offset, 1, line->length, stdout);
@@ -116,6 +128,8 @@ int main(int argc, char **argv)
     close(fd);
 
     line_count = build_table(table);
+
+    print_table(table, line_count);
 
     signal(SIGALRM, timeout);
 

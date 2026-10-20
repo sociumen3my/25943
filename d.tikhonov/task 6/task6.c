@@ -80,6 +80,18 @@ static int build_table(Line *table)
     return lines;
 }
 
+static void print_table(const Line *table, int line_count)
+{
+    int i;
+
+    printf("Table of lines:\n");
+    printf("  line   offset   length\n");
+    for (i = 0; i < line_count; i++)
+    {
+        printf("  %4d   %7ld   %7zu\n", i + 1, (long)table[i].offset, table[i].length);
+    }
+}
+
 static int print_line(const Line *line)
 {
     char text[MAX_LINE_LENGTH];
@@ -134,6 +146,8 @@ int main(int argc, char **argv)
         close(fd);
         return EXIT_FAILURE;
     }
+
+    print_table(table, line_count);
 
     first_input = 1;
     for (;;)
