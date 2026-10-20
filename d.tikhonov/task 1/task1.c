@@ -33,7 +33,7 @@ static void usage(const char *name)
     printf("  -i             print uid, euid, gid, egid\n");
     printf("  -s             become the leader of a new process group\n");
     printf("  -p             print pid, ppid, pgrp\n");
-    printf("  -u             print the file size limit and the max number of processes the user can still create\n");
+    printf("  -u             print the process limit (ulimit -u) and the max number of processes the user can still create\n");
     printf("  -U n           set the file size limit to n bytes\n");
     printf("  -c             print the core dump size limit\n");
     printf("  -C n           set the core dump size limit to n bytes\n");
@@ -163,19 +163,19 @@ static int options(int argc, char **argv)
         break;
 
     case 'u':
-        errno = 0;
-        value = ulimit(UL_GETFSIZE);
-        if (value == -1 && errno != 0)
-        {
-            perror("ulimit");
-            return -1;
-        }
-        printf("ulimit=%ld\n", value);
-
         if (getrlimit(RLIMIT_NPROC, &rlimit) == -1)
         {
             perror("getrlimit");
             return -1;
+        }
+
+        if (rlimit.rlim_cur == RLIM_INFINITY)
+        {
+            puts("ulimit=unlimited");
+        }
+        else
+        {
+            printf("ulimit=%llu\n", (unsigned long long)rlimit.rlim_cur);
         }
 
         process_count = count_processes("/proc", getuid());
@@ -199,8 +199,8 @@ static int options(int argc, char **argv)
                 remaining = (unsigned long long)rlimit.rlim_cur -
                     (unsigned long long)process_count;
             }
-            printf("max new processes=%llu (limit=%llu, current=%d)\n",
-                remaining, (unsigned long long)rlimit.rlim_cur, process_count);
+            printf("max new processes=%llu (current=%d)\n",
+                remaining, process_count);
         }
         break;
 
