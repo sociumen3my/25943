@@ -1,0 +1,10 @@
+The quick brown fox jumps over the lazy dog
+A simple text file for testing
+Each line has a different length
+Some lines are longer than others
+This file is used by the program
+The program reads one line at a time
+It builds a table of offsets and lengths
+Then it prints the requested line
+Zero ends the program
+That is all
