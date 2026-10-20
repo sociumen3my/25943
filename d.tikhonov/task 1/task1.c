@@ -4,6 +4,10 @@
 #include <sys/resource.h>
 #include <dirent.h>
 #include <errno.h>
+
+#ifndef RLIMIT_NPROC
+#define RLIMIT_NPROC 6
+#endif
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
