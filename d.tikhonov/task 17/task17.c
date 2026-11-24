@@ -3,12 +3,10 @@
 #include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 
 #define LIMIT 40
-#define CAPACITY 41
 #define ESCAPE 27
 #define CONTROL_W 23
 #define CONTROL_D 4
@@ -68,12 +66,11 @@ int main(void)
 {
     struct termios saved;
     struct termios mode;
-    char text[CAPACITY];
+    char text[LIMIT];
     unsigned char key;
     ssize_t result;
     int used;
     int cut;
-    int tail;
     int next;
     int failed;
 
@@ -174,45 +171,15 @@ int main(void)
         }
         else
         {
-            if (used >= LIMIT)
+            if (used == LIMIT)
             {
-                cut = used;
-                while (cut > 0 && text[cut - 1] == ' ')
+                fputs("\r\n", stdout);
+                used = 0;
+
+                if (key == ' ')
                 {
-                    cut--;
+                    continue;
                 }
-
-                if (key == ' ' || cut < used)
-                {
-                    remove_chars(used - cut);
-                    fputs("\r\n", stdout);
-                    used = cut;
-
-                    if (key == ' ')
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    while (cut > 0 && text[cut - 1] != ' ')
-                    {
-                        cut--;
-                    }
-
-                    tail = used - cut;
-                    remove_chars(tail);
-                    fputs("\r\n", stdout);
-                    memmove(text, text + cut, (size_t)tail);
-                    used = tail;
-                    fwrite(text, 1, (size_t)used, stdout);
-                }
-            }
-
-            if (used >= CAPACITY)
-            {
-                putchar('\a');
-                continue;
             }
 
             text[used++] = (char)key;
